@@ -11,7 +11,7 @@ from app.models.incident import Incident
 from app.schemas.alert import AlertRead
 from app.schemas.approval import ApprovalCreate
 from app.schemas.incident import IncidentDetail, IncidentRead, TimelineEvent
-from app.schemas.investigation import InvestigationDetail, InvestigationRead
+from app.schemas.investigation import InvestigationDetail
 from app.schemas.postmortem import PostmortemRead
 from app.schemas.remediation import RemediateRequest, RemediationActionRead
 from app.schemas.verification import VerificationRead
@@ -43,7 +43,7 @@ async def get_incident(
     return IncidentDetail(
         **IncidentRead.model_validate(incident).model_dump(),
         alerts=[AlertRead.model_validate(a) for a in incident.alerts],
-        investigations=[InvestigationRead.model_validate(i) for i in incident.investigations],
+        investigations=[InvestigationDetail.model_validate(i) for i in incident.investigations],
         remediation_actions=[
             RemediationActionRead.model_validate(r) for r in incident.remediation_actions
         ],

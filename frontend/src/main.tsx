@@ -10,6 +10,11 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchInterval: 5000,
+      // This is a live incident-response dashboard - keep polling even when
+      // the tab isn't focused, since an incident can start while the user
+      // is looking elsewhere and the view should already be current when
+      // they come back.
+      refetchIntervalInBackground: true,
       retry: 1,
     },
   },

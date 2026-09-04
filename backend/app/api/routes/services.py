@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
@@ -6,9 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import NotFoundError
 from app.db.session import get_db
+from app.models.enums import LogLevel
 from app.models.incident import Incident
+from app.models.log_entry import LogEntry
 from app.models.metric_snapshot import MetricSnapshot
 from app.models.service import Service
+from app.schemas.log_entry import LogEntryRead
+from app.schemas.metric_snapshot import MetricSnapshotRead
 from app.schemas.service import ServiceHealth, ServiceRead
 from app.services.alerting import OPEN_STATUSES
 
@@ -59,3 +64,36 @@ async def get_service(
     if service is None:
         raise NotFoundError(f"Service {service_id} not found")
     return await _build_health(session, service)
+
+
+@router.get("/{service_id}/metrics", response_model=list[MetricSnapshotRead])
+async def get_service_metrics(
+    service_id: uuid.UUID, window_seconds: int = 300, session: AsyncSession = Depends(get_db)
+) -> list[MetricSnapshotRead]:
+    cutoff = datetime.now(UTC) - timedelta(seconds=window_seconds)
+    result = await session.execute(
+        select(MetricSnapshot)
+        .where(MetricSnapshot.service_id == service_id, MetricSnapshot.timestamp >= cutoff)
+        .order_by(MetricSnapshot.timestamp)
+    )
+    return [MetricSnapshotRead.model_validate(m) for m in result.scalars().all()]
+
+
+@router.get("/{service_id}/logs", response_model=list[LogEntryRead])
+async def get_service_logs(
+    service_id: uuid.UUID,
+    window_seconds: int = 300,
+    limit: int = 200,
+    level: LogLevel | None = None,
+    session: AsyncSession = Depends(get_db),
+) -> list[LogEntryRead]:
+    cutoff = datetime.now(UTC) - timedelta(seconds=window_seconds)
+    query = select(LogEntry).where(
+        LogEntry.service_id == service_id, LogEntry.timestamp >= cutoff
+    )
+    if level is not None:
+        query = query.where(LogEntry.level == level)
+    query = query.order_by(LogEntry.timestamp.desc()).limit(limit)
+    result = await session.execute(query)
+    entries = list(reversed(result.scalars().all()))
+    return [LogEntryRead.model_validate(entry) for entry in entries]

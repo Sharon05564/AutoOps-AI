@@ -4,7 +4,7 @@ from datetime import datetime
 from app.models.enums import IncidentStatus, Severity
 from app.schemas.alert import AlertRead
 from app.schemas.common import ORMModel
-from app.schemas.investigation import InvestigationRead
+from app.schemas.investigation import InvestigationDetail
 from app.schemas.remediation import RemediationActionRead
 from app.schemas.verification import VerificationRead
 
@@ -23,7 +23,7 @@ class IncidentRead(ORMModel):
 
 class IncidentDetail(IncidentRead):
     alerts: list[AlertRead]
-    investigations: list[InvestigationRead]
+    investigations: list[InvestigationDetail]
     remediation_actions: list[RemediationActionRead]
     verifications: list[VerificationRead]
     has_postmortem: bool
