@@ -5,15 +5,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import NotFoundError
 from app.db.session import get_db
-from app.models.enums import IncidentStatus
+from app.models.enums import IncidentStatus, RemediationStatus
 from app.models.incident import Incident
 from app.schemas.alert import AlertRead
+from app.schemas.approval import ApprovalCreate
 from app.schemas.incident import IncidentDetail, IncidentRead, TimelineEvent
 from app.schemas.investigation import InvestigationDetail, InvestigationRead
-from app.schemas.remediation import RemediationActionRead
+from app.schemas.remediation import RemediateRequest, RemediationActionRead
 from app.schemas.verification import VerificationRead
 from app.services import incident_service
 from app.services.investigation_service import run_investigation
+from app.services.remediation_service import decide_approval, propose_remediation
 
 router = APIRouter(prefix="/incidents", tags=["incidents"])
 
@@ -65,3 +67,45 @@ async def investigate_incident(
         raise NotFoundError(f"Incident {incident_id} not found")
     investigation = await run_investigation(session, incident)
     return InvestigationDetail.model_validate(investigation)
+
+
+@router.post("/{incident_id}/remediate", response_model=RemediationActionRead)
+async def remediate_incident(
+    incident_id: uuid.UUID,
+    request: RemediateRequest | None = None,
+    session: AsyncSession = Depends(get_db),
+) -> RemediationActionRead:
+    incident = await incident_service.get_incident(session, incident_id)
+    if incident is None:
+        raise NotFoundError(f"Incident {incident_id} not found")
+    action_type = request.action_type if request else None
+    action = await propose_remediation(session, incident, action_type=action_type)
+    return RemediationActionRead.model_validate(action)
+
+
+@router.post("/{incident_id}/approve", response_model=RemediationActionRead)
+async def approve_incident_remediation(
+    incident_id: uuid.UUID,
+    request: ApprovalCreate,
+    session: AsyncSession = Depends(get_db),
+) -> RemediationActionRead:
+    incident = await incident_service.get_incident(session, incident_id)
+    if incident is None:
+        raise NotFoundError(f"Incident {incident_id} not found")
+
+    action = next(
+        (a for a in incident.remediation_actions if a.status == RemediationStatus.PENDING_APPROVAL),
+        None,
+    )
+    if action is None:
+        raise NotFoundError(f"Incident {incident_id} has no remediation action awaiting approval")
+
+    action = await decide_approval(
+        session,
+        incident,
+        action,
+        approved=request.approved,
+        approved_by=request.approved_by,
+        reason=request.reason,
+    )
+    return RemediationActionRead.model_validate(action)

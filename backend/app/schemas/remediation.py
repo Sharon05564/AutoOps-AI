@@ -2,9 +2,15 @@ import uuid
 from datetime import datetime
 from typing import Any
 
+from pydantic import BaseModel
+
 from app.models.enums import ActionType, RemediationStatus, RiskLevel
 from app.schemas.approval import ApprovalRead
 from app.schemas.common import ORMModel
+
+
+class RemediateRequest(BaseModel):
+    action_type: ActionType | None = None
 
 
 class RemediationActionRead(ORMModel):
