@@ -6,12 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import NotFoundError
 from app.db.session import get_db
 from app.models.enums import IncidentStatus
+from app.models.incident import Incident
 from app.schemas.alert import AlertRead
 from app.schemas.incident import IncidentDetail, IncidentRead, TimelineEvent
-from app.schemas.investigation import InvestigationRead
+from app.schemas.investigation import InvestigationDetail, InvestigationRead
 from app.schemas.remediation import RemediationActionRead
 from app.schemas.verification import VerificationRead
 from app.services import incident_service
+from app.services.investigation_service import run_investigation
 
 router = APIRouter(prefix="/incidents", tags=["incidents"])
 
@@ -52,3 +54,14 @@ async def get_incident_timeline(
     if incident is None:
         raise NotFoundError(f"Incident {incident_id} not found")
     return [TimelineEvent(**event) for event in incident_service.build_timeline(incident)]
+
+
+@router.post("/{incident_id}/investigate", response_model=InvestigationDetail)
+async def investigate_incident(
+    incident_id: uuid.UUID, session: AsyncSession = Depends(get_db)
+) -> InvestigationDetail:
+    incident = await session.get(Incident, incident_id)
+    if incident is None:
+        raise NotFoundError(f"Incident {incident_id} not found")
+    investigation = await run_investigation(session, incident)
+    return InvestigationDetail.model_validate(investigation)

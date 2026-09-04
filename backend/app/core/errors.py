@@ -33,6 +33,12 @@ class ApprovalRequiredError(AutoOpsError):
     status_code = status.HTTP_403_FORBIDDEN
 
 
+class InvestigationFailedError(AutoOpsError):
+    """Raised when the investigation provider fails to produce a diagnosis."""
+
+    status_code = status.HTTP_502_BAD_GATEWAY
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AutoOpsError)
     async def autoops_error_handler(request: Request, exc: AutoOpsError) -> JSONResponse:
