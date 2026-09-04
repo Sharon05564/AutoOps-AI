@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -9,6 +10,7 @@ from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging, get_logger
+from app.services.telemetry import TelemetryPoller
 
 settings = get_settings()
 configure_logging(settings.log_level)
@@ -18,7 +20,11 @@ logger = get_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("app_starting", provider=settings.llm_provider)
+    poller = TelemetryPoller()
+    app.state.telemetry_poller = poller
+    poller_task = asyncio.create_task(poller.run_forever())
     yield
+    poller_task.cancel()
     logger.info("app_shutdown")
 
 
