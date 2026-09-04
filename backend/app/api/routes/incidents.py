@@ -16,6 +16,7 @@ from app.schemas.verification import VerificationRead
 from app.services import incident_service
 from app.services.investigation_service import run_investigation
 from app.services.remediation_service import decide_approval, propose_remediation
+from app.services.verification_service import verify_recovery
 
 router = APIRouter(prefix="/incidents", tags=["incidents"])
 
@@ -109,3 +110,14 @@ async def approve_incident_remediation(
         reason=request.reason,
     )
     return RemediationActionRead.model_validate(action)
+
+
+@router.post("/{incident_id}/verify", response_model=VerificationRead)
+async def verify_incident_recovery(
+    incident_id: uuid.UUID, session: AsyncSession = Depends(get_db)
+) -> VerificationRead:
+    incident = await incident_service.get_incident(session, incident_id)
+    if incident is None:
+        raise NotFoundError(f"Incident {incident_id} not found")
+    verification = await verify_recovery(session, incident)
+    return VerificationRead.model_validate(verification)

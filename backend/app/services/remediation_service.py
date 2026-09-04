@@ -11,6 +11,7 @@ from app.models.incident import Incident
 from app.models.remediation_action import RemediationAction
 from app.models.service import Service
 from app.policies.risk import requires_approval, risk_level_for
+from app.services.verification_service import schedule_automatic_verification
 from app.tools import mutating
 
 logger = get_logger(__name__)
@@ -20,6 +21,8 @@ IN_FLIGHT_STATUSES = (
     RemediationStatus.APPROVED,
     RemediationStatus.EXECUTING,
 )
+
+AUTO_VERIFICATION_DELAY_SECONDS = 10.0
 
 ACTION_EXECUTORS = {
     ActionType.ROLLBACK_DEPLOYMENT: mutating.rollback_deployment,
@@ -169,3 +172,5 @@ async def _execute(session: AsyncSession, incident: Incident, action: Remediatio
         action_type=action.action_type.value,
         status=action.status.value,
     )
+    if succeeded:
+        schedule_automatic_verification(incident.id, delay_seconds=AUTO_VERIFICATION_DELAY_SECONDS)
