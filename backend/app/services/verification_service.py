@@ -13,6 +13,7 @@ from app.models.enums import IncidentStatus, VerificationStatus
 from app.models.incident import Incident
 from app.models.metric_snapshot import MetricSnapshot
 from app.models.verification import Verification
+from app.observability.metrics import autoops_active_incidents, autoops_incident_resolution_seconds
 
 logger = get_logger(__name__)
 
@@ -79,6 +80,10 @@ async def verify_recovery(session: AsyncSession, incident: Incident) -> Verifica
     incident.status = IncidentStatus.RESOLVED if healthy else IncidentStatus.FAILED
     if healthy:
         incident.resolved_at = datetime.now(UTC)
+        autoops_incident_resolution_seconds.observe(
+            (incident.resolved_at - incident.detected_at).total_seconds()
+        )
+    autoops_active_incidents.dec()
 
     await session.commit()
     await session.refresh(verification)

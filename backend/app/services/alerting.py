@@ -8,6 +8,7 @@ from app.models.alert import Alert
 from app.models.enums import IncidentStatus, Severity
 from app.models.incident import Incident
 from app.models.service import Service
+from app.observability.metrics import autoops_active_incidents, autoops_incidents_total
 
 OPEN_STATUSES = (
     IncidentStatus.DETECTED,
@@ -75,6 +76,8 @@ async def evaluate_and_create_alerts(
         )
         session.add(incident)
         await session.flush()
+        autoops_incidents_total.labels(severity=severity.value).inc()
+        autoops_active_incidents.inc()
 
     alerts = []
     for metric_name, value, threshold in breaches:

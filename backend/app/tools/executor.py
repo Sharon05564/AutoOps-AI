@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.agent_tool_call import AgentToolCall
+from app.observability.metrics import autoops_agent_tool_calls_total
 from app.tools import read_only
 
 _TOOL_FUNCTIONS = {
@@ -40,6 +41,7 @@ class ToolExecutor:
         self, tool_name: str, arguments: dict[str, Any] | None = None
     ) -> dict[str, Any] | list[Any]:
         arguments = arguments or {}
+        autoops_agent_tool_calls_total.labels(tool_name=tool_name).inc()
         func = _TOOL_FUNCTIONS.get(tool_name)
         if func is None:
             return {"error": f"unknown tool: {tool_name}"}

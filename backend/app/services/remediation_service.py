@@ -10,6 +10,11 @@ from app.models.enums import ActionType, IncidentStatus, RemediationStatus
 from app.models.incident import Incident
 from app.models.remediation_action import RemediationAction
 from app.models.service import Service
+from app.observability.metrics import (
+    autoops_active_incidents,
+    autoops_remediation_attempts_total,
+    autoops_remediation_success_total,
+)
 from app.policies.risk import requires_approval, risk_level_for
 from app.services.verification_service import schedule_automatic_verification
 from app.tools import mutating
@@ -56,6 +61,7 @@ async def propose_remediation(
     attempt_number = len(incident.remediation_actions) + 1
     if attempt_number > settings.max_remediation_attempts_per_incident:
         incident.status = IncidentStatus.FAILED
+        autoops_active_incidents.dec()
         await session.commit()
         raise ConflictError("Maximum remediation attempts exceeded for this incident")
 
@@ -144,6 +150,7 @@ async def _execute(session: AsyncSession, incident: Incident, action: Remediatio
     action.status = RemediationStatus.EXECUTING
     incident.status = IncidentStatus.REMEDIATING
     await session.flush()
+    autoops_remediation_attempts_total.labels(action_type=action.action_type.value).inc()
 
     executor = ACTION_EXECUTORS[action.action_type]
     try:
@@ -157,6 +164,7 @@ async def _execute(session: AsyncSession, incident: Incident, action: Remediatio
         action.result = {"error": str(exc)}
         action.executed_at = datetime.now(UTC)
         incident.status = IncidentStatus.FAILED
+        autoops_active_incidents.dec()
         await session.commit()
         return
 
@@ -165,6 +173,10 @@ async def _execute(session: AsyncSession, incident: Incident, action: Remediatio
     succeeded = bool(result.get("success"))
     action.status = RemediationStatus.SUCCEEDED if succeeded else RemediationStatus.FAILED
     incident.status = IncidentStatus.VERIFYING if succeeded else IncidentStatus.FAILED
+    if succeeded:
+        autoops_remediation_success_total.labels(action_type=action.action_type.value).inc()
+    else:
+        autoops_active_incidents.dec()
     await session.commit()
     logger.info(
         "remediation_executed",
