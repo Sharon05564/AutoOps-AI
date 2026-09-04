@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+npm-debug.log*
+
+# Env
+.env
+.env.local
+
+# Docker
+*.pid
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# DB
+*.sqlite3
+postgres_data/
+
+# Grafana runtime data
+monitoring/grafana/data/
