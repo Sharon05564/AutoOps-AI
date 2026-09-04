@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, String, Text, func
+from sqlalchemy import JSON, DateTime, Enum, Float, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -31,6 +31,7 @@ class Investigation(Base, UUIDPrimaryKeyMixin):
     confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     summary: Mapped[str] = mapped_column(Text, default="", nullable=False)
     recommended_action: Mapped[str] = mapped_column(String(50), default="", nullable=False)
+    evidence: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

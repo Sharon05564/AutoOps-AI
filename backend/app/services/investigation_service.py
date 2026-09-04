@@ -52,6 +52,7 @@ async def run_investigation(session: AsyncSession, incident: Incident) -> Invest
     investigation.recommended_action = (
         diagnosis.recommended_action.value if diagnosis.recommended_action else ""
     )
+    investigation.evidence = diagnosis.evidence
     investigation.completed_at = datetime.now(UTC)
     incident.status = IncidentStatus.DIAGNOSED
 

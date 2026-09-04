@@ -11,7 +11,7 @@ class PostmortemRead(ORMModel):
     summary: str
     root_cause: str
     timeline: list[dict[str, Any]]
-    evidence: list[dict[str, Any]]
+    evidence: list[str]
     remediation_summary: str
     recovery_verification: str
     prevention_recommendations: list[str]

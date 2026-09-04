@@ -15,6 +15,7 @@ class InvestigationRead(ORMModel):
     confidence: float
     summary: str
     recommended_action: str
+    evidence: list[str]
     started_at: datetime
     completed_at: datetime | None
 

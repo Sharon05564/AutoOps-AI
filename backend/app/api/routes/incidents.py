@@ -2,6 +2,7 @@ import uuid
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import PlainTextResponse
 
 from app.core.errors import NotFoundError
 from app.db.session import get_db
@@ -11,10 +12,12 @@ from app.schemas.alert import AlertRead
 from app.schemas.approval import ApprovalCreate
 from app.schemas.incident import IncidentDetail, IncidentRead, TimelineEvent
 from app.schemas.investigation import InvestigationDetail, InvestigationRead
+from app.schemas.postmortem import PostmortemRead
 from app.schemas.remediation import RemediateRequest, RemediationActionRead
 from app.schemas.verification import VerificationRead
 from app.services import incident_service
 from app.services.investigation_service import run_investigation
+from app.services.postmortem_service import generate_postmortem
 from app.services.remediation_service import decide_approval, propose_remediation
 from app.services.verification_service import verify_recovery
 
@@ -121,3 +124,25 @@ async def verify_incident_recovery(
         raise NotFoundError(f"Incident {incident_id} not found")
     verification = await verify_recovery(session, incident)
     return VerificationRead.model_validate(verification)
+
+
+@router.get("/{incident_id}/postmortem", response_model=PostmortemRead)
+async def get_incident_postmortem(
+    incident_id: uuid.UUID, session: AsyncSession = Depends(get_db)
+) -> PostmortemRead:
+    incident = await incident_service.get_incident(session, incident_id)
+    if incident is None:
+        raise NotFoundError(f"Incident {incident_id} not found")
+    postmortem = await generate_postmortem(session, incident)
+    return PostmortemRead.model_validate(postmortem)
+
+
+@router.get("/{incident_id}/postmortem/markdown", response_class=PlainTextResponse)
+async def get_incident_postmortem_markdown(
+    incident_id: uuid.UUID, session: AsyncSession = Depends(get_db)
+) -> str:
+    incident = await incident_service.get_incident(session, incident_id)
+    if incident is None:
+        raise NotFoundError(f"Incident {incident_id} not found")
+    postmortem = await generate_postmortem(session, incident)
+    return postmortem.markdown_report

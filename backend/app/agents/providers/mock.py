@@ -1,7 +1,8 @@
 from datetime import datetime
+from typing import Any
 
 from app.agents.providers.base import InvestigationProvider
-from app.agents.schemas import Diagnosis
+from app.agents.schemas import Diagnosis, PostmortemNarrative
 from app.models.enums import ActionType
 from app.tools.executor import ToolExecutor
 
@@ -115,3 +116,48 @@ class MockProvider(InvestigationProvider):
             recommended_action=None,
             evidence=evidence,
         )
+
+    async def generate_postmortem_narrative(self, context: dict[str, Any]) -> PostmortemNarrative:
+        root_cause = (context.get("root_cause") or "").lower()
+        service_name = context.get("service_name", "the service")
+        severity = context.get("severity", "UNKNOWN")
+        action_type = context.get("action_type")
+        verification_status = context.get("verification_status")
+
+        outcome = (
+            "recovery was confirmed"
+            if verification_status == "PASSED"
+            else "the fix did not resolve the issue and further action was required"
+            if verification_status == "FAILED"
+            else "recovery has not yet been verified"
+        )
+        summary = (
+            f"A {severity} severity incident degraded {service_name} "
+            f"({context.get('root_cause', 'root cause unknown')}). "
+            f"{action_type or 'A remediation'} was applied and {outcome}."
+        )
+
+        if "database" in root_cause or "connection" in root_cause:
+            recommendations = [
+                "Add a pre-deploy check that validates the DB connection pool size against "
+                "expected replica count before promoting a deployment.",
+                "Add a canary stage that runs synthetic checkout requests for a few minutes "
+                "before shifting full traffic to a new deployment.",
+                "Alert when error rate crosses threshold within 5 minutes of a deployment, "
+                "tagged with the deployment version, to speed up correlation.",
+            ]
+        else:
+            recommendations = [
+                "Add an automated rollback trigger for error-rate spikes that correlate with "
+                "a recent deployment.",
+                "Review alert thresholds for this service to catch this class of degradation "
+                "earlier.",
+            ]
+
+        if action_type in ("RESTART_SERVICE", "SCALE_SERVICE") and verification_status == "FAILED":
+            recommendations.append(
+                "Update the on-call runbook to prefer rollback over restart/scale when errors "
+                "are correlated with a recent deployment."
+            )
+
+        return PostmortemNarrative(summary=summary, prevention_recommendations=recommendations)

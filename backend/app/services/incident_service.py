@@ -13,6 +13,7 @@ from app.models.remediation_action import RemediationAction
 
 def _detail_query():
     return select(Incident).options(
+        selectinload(Incident.service),
         selectinload(Incident.alerts),
         selectinload(Incident.investigations).selectinload(Investigation.tool_calls),
         selectinload(Incident.remediation_actions).selectinload(RemediationAction.approval),

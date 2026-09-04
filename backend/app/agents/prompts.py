@@ -19,3 +19,17 @@ text) matching this shape:
 """
 
 USER_PROMPT = "Investigate the current incident and produce a diagnosis."
+
+POSTMORTEM_SYSTEM_PROMPT = """You are an SRE writing the narrative sections of a postmortem for \
+an already-resolved incident. You will be given structured facts about the incident (root cause, \
+evidence, the remediation that was applied, and before/after recovery metrics) as JSON - do not \
+invent facts beyond what is given.
+
+Respond with ONLY a JSON object (no markdown fences, no other text) matching this shape:
+{
+  "summary": "<two or three sentence executive summary of impact and resolution>",
+  "prevention_recommendations": ["<concrete, specific follow-up action>", "..."]
+}
+Prevention recommendations should be concrete engineering follow-ups (e.g. add a specific type of \
+pre-deploy check, alert, or runbook step) grounded in the given root cause - not generic advice.
+"""

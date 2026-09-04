@@ -1,11 +1,12 @@
 import json
+from typing import Any
 
 from openai import AsyncOpenAI
 
-from app.agents.json_utils import parse_diagnosis
-from app.agents.prompts import SYSTEM_PROMPT, USER_PROMPT
+from app.agents.json_utils import parse_diagnosis, parse_postmortem_narrative
+from app.agents.prompts import POSTMORTEM_SYSTEM_PROMPT, SYSTEM_PROMPT, USER_PROMPT
 from app.agents.providers.base import InvestigationProvider
-from app.agents.schemas import Diagnosis
+from app.agents.schemas import Diagnosis, PostmortemNarrative
 from app.tools.definitions import READ_ONLY_TOOLS
 from app.tools.executor import ToolExecutor
 
@@ -87,3 +88,13 @@ class OpenAIProvider(InvestigationProvider):
         raise RuntimeError(
             f"OpenAI investigation did not converge within {MAX_TOOL_CALL_TURNS} turns"
         )
+
+    async def generate_postmortem_narrative(self, context: dict[str, Any]) -> PostmortemNarrative:
+        response = await self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": POSTMORTEM_SYSTEM_PROMPT},
+                {"role": "user", "content": json.dumps(context)},
+            ],
+        )
+        return parse_postmortem_narrative(response.choices[0].message.content or "")

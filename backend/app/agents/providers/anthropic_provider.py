@@ -1,9 +1,12 @@
+import json
+from typing import Any
+
 from anthropic import AsyncAnthropic
 
-from app.agents.json_utils import parse_diagnosis
-from app.agents.prompts import SYSTEM_PROMPT, USER_PROMPT
+from app.agents.json_utils import parse_diagnosis, parse_postmortem_narrative
+from app.agents.prompts import POSTMORTEM_SYSTEM_PROMPT, SYSTEM_PROMPT, USER_PROMPT
 from app.agents.providers.base import InvestigationProvider
-from app.agents.schemas import Diagnosis
+from app.agents.schemas import Diagnosis, PostmortemNarrative
 from app.tools.definitions import READ_ONLY_TOOLS
 from app.tools.executor import ToolExecutor
 
@@ -71,3 +74,13 @@ class AnthropicProvider(InvestigationProvider):
         raise RuntimeError(
             f"Anthropic investigation did not converge within {MAX_TOOL_CALL_TURNS} turns"
         )
+
+    async def generate_postmortem_narrative(self, context: dict[str, Any]) -> PostmortemNarrative:
+        response = await self.client.messages.create(
+            model=self.model,
+            max_tokens=MAX_TOKENS,
+            system=POSTMORTEM_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": json.dumps(context)}],
+        )
+        text_blocks = [block.text for block in response.content if block.type == "text"]
+        return parse_postmortem_narrative("\n".join(text_blocks))
