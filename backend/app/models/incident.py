@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
@@ -8,6 +9,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from app.models.enums import IncidentStatus, Severity
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
+
+if TYPE_CHECKING:
+    from app.models.alert import Alert
+    from app.models.investigation import Investigation
+    from app.models.postmortem import Postmortem
+    from app.models.remediation_action import RemediationAction
+    from app.models.service import Service
+    from app.models.verification import Verification
 
 
 class Incident(Base, UUIDPrimaryKeyMixin, TimestampMixin):

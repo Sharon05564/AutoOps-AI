@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -7,6 +8,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
+
+if TYPE_CHECKING:
+    from app.models.deployment import Deployment
+    from app.models.incident import Incident
+    from app.models.log_entry import LogEntry
+    from app.models.metric_snapshot import MetricSnapshot
 
 
 class Service(Base, UUIDPrimaryKeyMixin, TimestampMixin):
