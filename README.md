@@ -1,5 +1,8 @@
 # AutoOps AI
 
+[![CI](https://github.com/Sharon05564/AutoOps-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/Sharon05564/AutoOps-AI/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 **Autonomous production incident responder.** Simulates a bad deployment, detects it from
 telemetry, has an LLM-backed agent investigate the real logs/metrics/deployment history to
 diagnose the root cause, proposes a remediation gated by a risk-based approval policy, executes it
@@ -152,12 +155,23 @@ for the same exhausted connection pool). Only a rollback actually helps.
 
 ## Screenshots
 
-> _Add screenshots here: Overview dashboard, Incident Detail (investigation + approval), the
-> Grafana dashboard, and a generated postmortem._
+**Overview — healthy baseline**
+![Overview dashboard showing a healthy checkout-service](docs/screenshots/01-overview-healthy.png)
 
-| Overview | Incident Detail | Postmortem |
-|---|---|---|
-| _screenshot_ | _screenshot_ | _screenshot_ |
+**Overview — after triggering the bad deployment**
+![Overview dashboard showing a degraded service and an active incident](docs/screenshots/02-overview-incident.png)
+
+**Incident detail — diagnosis, evidence, and the approval gate**
+![Incident detail page showing the agent's diagnosis, evidence, tool calls, and an approval form for the high-risk rollback](docs/screenshots/03-incident-detail-approval.png)
+
+**Incident detail — after remediation and automatic recovery verification**
+![Incident detail page showing the incident resolved, the rollback marked succeeded, and recovery verification passed](docs/screenshots/04-incident-resolved.png)
+
+**Generated postmortem**
+![Postmortem page showing summary, root cause, evidence, timeline, remediation, and prevention recommendations](docs/screenshots/05-postmortem.png)
+
+**Grafana dashboard — real metrics from the run above**
+![Grafana dashboard showing active incidents, simulator error rate and latency, agent tool calls, remediation attempts, and incident resolution time](docs/screenshots/06-grafana.png)
 
 ## Setup
 

@@ -239,8 +239,8 @@ function IncidentDetail() {
                 {verification.status}
               </span>
               <span>
-                error rate {String(verification.metrics_before.error_rate ?? "—")} →{" "}
-                {String(verification.metrics_after.error_rate ?? "—")}
+                error rate {formatPercent(verification.metrics_before.error_rate as number | undefined)}{" "}
+                → {formatPercent(verification.metrics_after.error_rate as number | undefined)}
               </span>
               <span className="muted">{formatDateTime(verification.checked_at)}</span>
             </div>
